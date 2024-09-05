@@ -1,0 +1,2 @@
+from Optimization_Benchmarks.TravelingSalesmanProblem import TSPInstance, TSPSolution
+from Optimization_Benchmarks.VehicleRoutingProblem import VRPInstance, VRPSolutionCostMinimization, VRPSolutionRevenueMaximization

@@ -1,0 +1,59 @@
+vehicle_routing_configuration_sweep:
+  - nodes: 5
+    delivery_demands: [0, 10, 6, 4 ,10]
+    number_of_reflections: 0
+  - nodes: 7
+    delivery_demands: [0, 6, 4, 4, 10, 2, 4]
+    number_of_reflections: 0
+  - nodes: 9
+    delivery_demands: [0, 2, 2, 4, 6, 2, 4, 8, 2]
+    number_of_reflections: 0
+  - nodes: 5
+    delivery_demands: [0, 10, 6, 4 ,10]
+    number_of_reflections: 1
+  - nodes: 7
+    delivery_demands: [0, 6, 4, 4, 10, 2, 4]
+    number_of_reflections: 1
+  - nodes: 9
+    delivery_demands: [0, 2, 2, 4, 6, 2, 4, 8, 2]
+    number_of_reflections: 1
+
+traveling_salesman_configuration_sweep:
+  - number_of_nodes: 7
+  - number_of_nodes: 10
+
+optimization_settings:
+  verbose: true
+  runs: 1
+  save_results: true
+  save_meta_prompt: true
+  optimal_score: 1
+  delay: 5
+  use_solution_score_history: true
+  number_of_reflections: 0
+  optimal_cost: -1
+
+optimization_hyperparameters:
+  max_list_length: 10
+  shuffling: true
+  iteration_steps: 3
+  model: "llama-3.1-8b-instant"
+  temperature: 0.5
+  max_tokens: 3000
+
+vehicle_routing_problem_parameters:
+  seed: 1
+  size: 100
+  number_of_customers: 4
+  vehicles:
+    a: 20
+    b: 12
+  include_routing: false
+  weight_factor: 0
+  revenue_per_container: 100
+  objective: "max"
+
+traveling_salesman_parameters:
+  seed: 1
+  number_of_nodes: 10
+  size: 100
