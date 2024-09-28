@@ -16,7 +16,7 @@ from Plotting.optimal_score_tsp import OptimalTSPScore  # If running from outsid
 from Optimization_Benchmarks.TravelingSalesmanProblem import TSPSolution, TSPInstance
 
 def Import_Data(folder_path: str, model: str = ""):
-    nodes, mean_optimality_gaps, std_optimality_gaps = [], [], []
+    nodes, mean_optimality_gaps, sem_optimality_gaps, mean_feasibility_rates, sem_feasibility_rates = [], [], [], [], []
 
     for filename in os.listdir(folder_path):
         if "tsp" not in filename or model not in filename:
@@ -29,25 +29,32 @@ def Import_Data(folder_path: str, model: str = ""):
         nodes.append(node)
         runs = data.get("runs")
         seeds = data.get("seeds")
+        max_iterations = data.get("max_iterations")
 
         optimality_gaps = []
+        feasibility_rates = []
         for idx, run in enumerate(runs):
             scores_i = []
+            feasible = 0
             for iteration in run:
+                feasible += 1
                 # Extracts the score of run i and iteration j.
                 score_i_j = iteration.get("score")
                 scores_i.append(score_i_j)
+            feasibility_rates.append(feasible/(max_iterations+20))
             min_score = min(scores_i)
             optimal_score = OptimalTSPScore(node, 100, seeds[idx])
             optimality_gap = 100 * (min_score - optimal_score)/optimal_score
             optimality_gaps.append(optimality_gap)
 
+        mean_feasibility_rates.append(np.mean(feasibility_rates))
+        sem_feasibility_rates.append(np.std(feasibility_rates) / np.sqrt(len(feasibility_rates)))
         mean_optimality_gaps.append(np.mean(optimality_gaps))
-        std_optimality_gaps.append(np.std(optimality_gaps))
+        sem_optimality_gaps.append(np.std(optimality_gaps) / np.sqrt(len(optimality_gaps)))
 
         file_info = filename.replace('.json', '').split('_')
-        print(f"Mean Optimal Score of {int(file_info[1].replace('node',''))} node tsp using {file_info[3]}: {round(np.mean(optimality_gaps),3)} %")
-    return nodes, mean_optimality_gaps, std_optimality_gaps
+        #print(f"Mean Optimal Score of {int(file_info[1].replace('node',''))} node tsp using {file_info[3]}: {round(np.mean(optimality_gaps),3)} % and Feasibility rate was {np.mean(feasibility_rates)} +- {np.std(feasibility_rates) / np.sqrt(len(feasibility_rates))}")
+    return nodes, mean_optimality_gaps, sem_optimality_gaps, mean_feasibility_rates, sem_feasibility_rates
 
 def get_models(results_path) -> set:
     models = set()
@@ -84,15 +91,33 @@ def generate_plot(results_path: str) -> None:
 
     # Plot LLM results
     for model in get_models(results_path):
-        nodes, mean_optimality_gaps, std_optimality_gaps = Import_Data(results_path, model=model)
-        plt.errorbar(nodes, mean_optimality_gaps, yerr=std_optimality_gaps, label=model, marker='o', capsize=5, capthick=1.5)
+        nodes, mean_optimality_gaps, sem_optimality_gaps, _, _ = Import_Data(results_path, model=model)
+        plt.errorbar(nodes, mean_optimality_gaps, yerr=sem_optimality_gaps, label=model, marker='o', capsize=5, capthick=1.5)
 
     plt.xlabel('Number of Nodes (n)')
     plt.ylabel('Optimality Gap (%)')
     plt.title('Optimality Gap Comparison')
     plt.legend()
     plt.grid(True)
-    plt.savefig(f"{results_path}/tsp_results.png")
+    plt.savefig(f"{results_path}/tsp_optimality_gap.png")
+    if __name__ == "__main__":
+        plt.show()
+    
+    plt.clf()
+    for model in get_models(results_path):
+        nodes, _, _, mean_feasibility, sem_feasibility = Import_Data(results_path, model=model)
+        plt.errorbar(nodes, mean_feasibility, yerr=sem_feasibility, label=model, marker='o', capsize=5, capthick=1.5)
+    
+    plt.xlabel('Number of Nodes (n)')
+    plt.ylabel('Feasibility rate (%)')
+    plt.title('Feasibility Comparison')
+    plt.legend()
+    plt.grid(True)
+    plt.savefig(f"{results_path}/tsp_feasibility.png")
+    if __name__ == "__main__":
+        plt.show()
+
+
 
 if __name__ == "__main__":
     results_path = '../results'
