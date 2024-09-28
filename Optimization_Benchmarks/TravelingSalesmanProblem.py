@@ -1,5 +1,6 @@
 import random
 import math
+import re
 
 from Optimization_Benchmarks.Base import ProblemSolution
 from typing import List, Dict, Tuple, Optional, Union
@@ -56,7 +57,7 @@ class TSPInstance():
         unvisited_nodes.remove(current_node)
 
         while unvisited_nodes:
-            nearest_node = min(unvisited_nodes, key=lambda node: self.distance(self.tsp_graph[current_node], self.tsp_graph[node]))
+            nearest_node = min(unvisited_nodes, key=lambda node: self.distance(self.graph[current_node], self.graph[node]))
             path.append(nearest_node)
             unvisited_nodes.remove(nearest_node)
             current_node = nearest_node
@@ -87,16 +88,9 @@ class TSPSolution(ProblemSolution):
             return self.compute_score()
     
     def isValid(self, response: str) -> bool:
-        trace_len = len("<trace>")
-        idx_1 = response.rfind("<trace>")
-        if idx_1 == -1:# or response.count("<trace>") > 1:
-            return False
-        idx_2 = response.rfind("</trace>", idx_1 + trace_len)
-        if idx_2 == -1:# or response.count("</trace>") > 1:
-            return False
-        response = response[idx_1:idx_2 + trace_len]
-        path = response[idx_1+trace_len:idx_2].split(',')
+        trace_contents = re.findall(r'<trace>(.*?)</trace>', response)
         try:
+            path = trace_contents[-1].split(",")
             self.path = [int(i) for i in path]
             if len(self.path) < 2:
                 return False
@@ -104,10 +98,12 @@ class TSPSolution(ProblemSolution):
                     self.path = self.path[:-1]
             if len(self.path) != self.problem_instance.NUMBER_OF_NODES:
                 return False
+            if len(self.path) != len(set(self.path)):
+                return False
             for i in self.path:
                 if i < 0 or i >= self.problem_instance.NUMBER_OF_NODES:
                     return False
-        except ValueError:
+        except:
             return False
         return True
     

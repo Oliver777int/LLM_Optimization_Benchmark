@@ -7,7 +7,8 @@ from Optimization_Benchmarks.SolutionScoreHistory import SolutionScoreHistory
 from Optimization_Benchmarks.TravelingSalesmanProblem import TSPInstance, TSPSolution
 from Prompts.traveling_salesman_prompt_template import TSP_META_PROMPT_COORDINATES, TSP_META_PROMPT_HISTORY
 from Optimizer import Optimize
-
+from Plotting.optimal_score_tsp import OptimalTSPScore
+from Plotting.generate_tsp_plot import generate_plot
 RESULT_DIR = Path("results")
 RESULT_DIR.mkdir(exist_ok=True)
 CONFIG_PATH = Path("config.yaml")
@@ -46,7 +47,6 @@ if __name__ == "__main__":
         RUNS = config["optimization_settings"]["runs"]
         SAVE_RESULTS = config["optimization_settings"]["save_results"]
         SAVE_META_PROMPT = config["optimization_settings"]["save_meta_prompt"]
-        OPTIMAL_COST = config["optimization_settings"]["optimal_cost"]
         DELAY = config["optimization_settings"]["delay"]
 
         # Optimization hyperparameters
@@ -56,20 +56,20 @@ if __name__ == "__main__":
         MODEL = config["optimization_hyperparameters"]["model"]
         TEMPERATURE = config["optimization_hyperparameters"]["temperature"]
         MAX_TOKENS = config["optimization_hyperparameters"]["max_tokens"]
-
+        INIT_SOL_PER_STEP = config["optimization_hyperparameters"]["init_sol_per_step"]
         if current_config:
             MAX_REFLECTIONS = current_config.get("i") or config["optimization_settings"]["number_of_reflections"]
 
         # Traveling Salesman Problem - Parameters
         if current_config:
-            SEED = current_config.get("seed") or config["traveling_salesman_parameters"]["seed"]
+            SEEDS = current_config.get("seeds") or config["traveling_salesman_parameters"]["seeds"]
             NUMBER_OF_NODES = current_config.get("number_of_nodes") or config["traveling_salesman_parameters"]["number_of_nodes"]
         SIZE = config["traveling_salesman_parameters"]["size"]
-        
-        json_path = RESULT_DIR / f"tsp_{NUMBER_OF_NODES}node_{RUNS}runs_{MODEL}.json"
+
+        json_path = RESULT_DIR / f"tsp_{str(NUMBER_OF_NODES).zfill(3)}node_{RUNS}runs_{MODEL}.json"
         # Result dictionary saved to json if SAVE_RESULTS = True
         results = {"model": MODEL,
-                "seed": SEED,
+                "seeds": SEEDS,
                 "nodes": NUMBER_OF_NODES,
                 "number_of_runs": RUNS,
                 "temperature": TEMPERATURE, 
@@ -77,8 +77,8 @@ if __name__ == "__main__":
                 "shuffling": SHUFFLING, 
                 "max_list_length": MAX_LIST_LENGTH,
                 "max_iterations": ITERATION_STEPS,
-                "optimal_score": OPTIMAL_COST,
                 "max_reflections": MAX_REFLECTIONS,
+                "init_sol_per_step": INIT_SOL_PER_STEP,
                 "delay": DELAY,
                 "verbose": VERBOSE,
                 "meta_prompt": None,
@@ -87,22 +87,28 @@ if __name__ == "__main__":
 
         # Final meta-prompt saved to json if SAVE_META_PROMPT = True
         meta_prompts = {
-            "seed": SEED,
+            "seeds": SEEDS,
             "nodes": NUMBER_OF_NODES,
             "meta_prompt": []
         }
 
-        # Initializes a Traveling Salesman Problem
-        tsp = TSPInstance(NUMBER_OF_NODES=NUMBER_OF_NODES, SIZE=SIZE, SEED=SEED)
-
-        # Prompt templates
-        TSP_META_PROMPT_TEMPLATE = TSP_META_PROMPT_COORDINATES.format(coordinates=tsp.coordinates) + TSP_META_PROMPT_HISTORY
-
+        logger.info(f"Looping through the following seeds: {SEEDS[0:RUNS]}")
         for run in range(RUNS):
+            SEED = SEEDS[run]
+            logger.info(f"Seed {SEED}")
             logger.info(f"Run {run+1}")
+
+            # Initializes a Traveling Salesman Problem
+            tsp = TSPInstance(NUMBER_OF_NODES=NUMBER_OF_NODES, SIZE=SIZE, SEED=SEED)
+
+            results["optimal_score"] = OptimalTSPScore(number_of_nodes=NUMBER_OF_NODES, size=SIZE, seed=SEED)
+            print(f"Optimal score for this run is: {results['optimal_score']}")
+            # Prompt templates
+            TSP_META_PROMPT_TEMPLATE = TSP_META_PROMPT_COORDINATES.format(coordinates=tsp.coordinates) + TSP_META_PROMPT_HISTORY
+
             solution_score_history = SolutionScoreHistory(maximize_score=False, max_solutions=MAX_LIST_LENGTH, shuffling=SHUFFLING, SEED=SEED)
             # (1) Add initial randomized solutions
-            randomly_initialized_solutions = [TSPSolution(problem_instance=tsp).random_init() for _ in range(5)]
+            randomly_initialized_solutions = [TSPSolution(problem_instance=tsp).random_init() for _ in range(MAX_LIST_LENGTH)]
             solution_score_history.append_list(randomly_initialized_solutions)
 
             # (2) Initialize the optimizer.
@@ -128,3 +134,5 @@ if __name__ == "__main__":
                     json.dump(meta_prompts, f)
         if VERBOSE:
             print(results)
+        
+    generate_plot(RESULT_DIR)

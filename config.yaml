@@ -1,3 +1,23 @@
+# Default Optimization settings
+optimization_settings:
+  verbose: true
+  runs: 3
+  save_results: true
+  save_meta_prompt: true
+  delay: 3
+  use_solution_score_history: true
+  number_of_reflections: 0
+
+optimization_hyperparameters:
+  max_list_length: 10
+  shuffling: true
+  iteration_steps: 50
+  model: "mixtral-8x7b-32768"
+  temperature: 1
+  max_tokens: 300
+  init_sol_per_step: 1    # Can be increased to help early convergence.
+
+# If performing VRP, a configuration sweep can be set as shown below
 vehicle_routing_configuration_sweep:
   - nodes: 5
     delivery_demands: [0, 10, 6, 4 ,10]
@@ -18,29 +38,13 @@ vehicle_routing_configuration_sweep:
     delivery_demands: [0, 2, 2, 4, 6, 2, 4, 8, 2]
     number_of_reflections: 1
 
+# Configuration sweep of traveling salesman.
 traveling_salesman_configuration_sweep:
   - number_of_nodes: 7
   - number_of_nodes: 10
+  - number_of_nodes: 15
 
-optimization_settings:
-  verbose: true
-  runs: 1
-  save_results: true
-  save_meta_prompt: true
-  optimal_score: 1
-  delay: 5
-  use_solution_score_history: true
-  number_of_reflections: 0
-  optimal_cost: -1
-
-optimization_hyperparameters:
-  max_list_length: 10
-  shuffling: true
-  iteration_steps: 3
-  model: "llama-3.1-8b-instant"
-  temperature: 0.5
-  max_tokens: 3000
-
+# Default parameters of VRP
 vehicle_routing_problem_parameters:
   seed: 1
   size: 100
@@ -53,7 +57,8 @@ vehicle_routing_problem_parameters:
   revenue_per_container: 100
   objective: "max"
 
+# Default parameters of TSP
 traveling_salesman_parameters:
-  seed: 1
-  number_of_nodes: 10
+  seeds: [41, 42, 43]
+  number_of_nodes: 7
   size: 100
