@@ -85,7 +85,7 @@ def generate_plot(results_path: str) -> None:
     # Plot LLM results
     for model in get_models(results_path):
         nodes, mean_optimality_gaps, std_optimality_gaps = Import_Data(results_path, model=model)
-        plt.errorbar(nodes, mean_optimality_gaps, yerr=std_optimality_gaps, label='Mixtral 8x7B', marker='o', capsize=5, capthick=1.5)
+        plt.errorbar(nodes, mean_optimality_gaps, yerr=std_optimality_gaps, label=model, marker='o', capsize=5, capthick=1.5)
 
     plt.xlabel('Number of Nodes (n)')
     plt.ylabel('Optimality Gap (%)')
