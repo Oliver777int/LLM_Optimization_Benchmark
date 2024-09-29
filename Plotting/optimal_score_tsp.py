@@ -7,7 +7,7 @@ sys.path.insert(0, parent_dir)
 
 from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
-from Optimization_Benchmarks.TravelingSalesmanProblem import TSPInstance
+from Optimization_Benchmarks.TravelingSalesmanProblem import TSPInstance, TSPSolution
 
 def create_data_model(tsp: TSPInstance):
     """Stores the data for the problem."""
@@ -18,20 +18,14 @@ def create_data_model(tsp: TSPInstance):
     return data
 
 
-def print_solution(manager, routing, solution):
-    """Prints solution on console."""
-    print(f"Objective: {solution.ObjectiveValue()} miles")
+def get_solution(manager, routing, solution):
     index = routing.Start(0)
-    plan_output = "Route for vehicle 0:\n"
-    route_distance = 0
+    route = []
     while not routing.IsEnd(index):
-        plan_output += f" {manager.IndexToNode(index)} ->"
+        route.append(manager.IndexToNode(index))
         previous_index = index
         index = solution.Value(routing.NextVar(index))
-        route_distance += routing.GetArcCostForVehicle(previous_index, index, 0)
-    plan_output += f" {manager.IndexToNode(index)}\n"
-    print(plan_output)
-    plan_output += f"Route distance: {route_distance}miles\n"
+    return route
 
 
 def OptimalTSPScore(number_of_nodes: str, size: int, seed: str) -> int:
@@ -69,13 +63,13 @@ def OptimalTSPScore(number_of_nodes: str, size: int, seed: str) -> int:
 
     # Solve the problem.
     solution = routing.SolveWithParameters(search_parameters)
-
-    # Print solution on console.
-    #if solution:
-    #    print_solution(manager, routing, solution)
     
-    return solution.ObjectiveValue()
+    # Print solution on console.
+    if solution:
+        path = get_solution(manager, routing, solution)
+    
+    return TSPSolution(problem_instance=tsp, path=path).compute_score()
 
 
 if __name__ == "__main__":
-    OptimalTSPScore(7, 100, 41)
+    print(OptimalTSPScore(7, 100, 41))

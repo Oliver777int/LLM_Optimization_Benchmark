@@ -11,9 +11,9 @@ optimization_settings:
 optimization_hyperparameters:
   max_list_length: 10
   shuffling: true
-  iteration_steps: 50
-  model: "mixtral-8x7b-32768"
-  temperature: 1
+  iteration_steps: 100
+  model: "llama-3.1-8b-instant"
+  temperature: 0.5
   max_tokens: 300
   init_sol_per_step: 1    # Can be increased to help early convergence.
 

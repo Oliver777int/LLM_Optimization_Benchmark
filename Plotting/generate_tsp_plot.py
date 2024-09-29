@@ -36,12 +36,14 @@ def Import_Data(folder_path: str, model: str = ""):
         for idx, run in enumerate(runs):
             scores_i = []
             feasible = 0
+            successful_iterations = set()
+            
             for iteration in run:
-                feasible += 1
+                successful_iterations.add(iteration.get("iteration"))
                 # Extracts the score of run i and iteration j.
                 score_i_j = iteration.get("score")
                 scores_i.append(score_i_j)
-            feasibility_rates.append(feasible/(max_iterations+20))
+            feasibility_rates.append(100 * len(successful_iterations)/(max(successful_iterations)+1))
             min_score = min(scores_i)
             optimal_score = OptimalTSPScore(node, 100, seeds[idx])
             optimality_gap = 100 * (min_score - optimal_score)/optimal_score
@@ -110,7 +112,7 @@ def generate_plot(results_path: str) -> None:
     
     plt.xlabel('Number of Nodes (n)')
     plt.ylabel('Feasibility rate (%)')
-    plt.title('Feasibility Comparison')
+    plt.title('Feasibility rate Comparison')
     plt.legend()
     plt.grid(True)
     plt.savefig(f"{results_path}/tsp_feasibility.png")
