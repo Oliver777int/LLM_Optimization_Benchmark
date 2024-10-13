@@ -64,7 +64,6 @@ def OptimalTSPScore(number_of_nodes: str, size: int, seed: str) -> int:
     # Solve the problem.
     solution = routing.SolveWithParameters(search_parameters)
     
-    # Print solution on console.
     if solution:
         path = get_solution(manager, routing, solution)
     

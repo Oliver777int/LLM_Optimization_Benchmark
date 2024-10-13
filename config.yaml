@@ -12,9 +12,9 @@ optimization_hyperparameters:
   max_list_length: 10
   shuffling: true
   iteration_steps: 100
-  model: "llama-3.1-8b-instant"
+  model: "llama-3.2-90b-text-preview"
   temperature: 0.5
-  max_tokens: 300
+  max_tokens: 1000
   init_sol_per_step: 1    # Can be increased to help early convergence.
 
 # If performing VRP, a configuration sweep can be set as shown below
@@ -25,18 +25,18 @@ vehicle_routing_configuration_sweep:
   - nodes: 7
     delivery_demands: [0, 6, 4, 4, 10, 2, 4]
     number_of_reflections: 0
-  - nodes: 9
+  - number_of_nodes: 9
     delivery_demands: [0, 2, 2, 4, 6, 2, 4, 8, 2]
     number_of_reflections: 0
-  - nodes: 5
-    delivery_demands: [0, 10, 6, 4 ,10]
-    number_of_reflections: 1
-  - nodes: 7
-    delivery_demands: [0, 6, 4, 4, 10, 2, 4]
-    number_of_reflections: 1
-  - nodes: 9
-    delivery_demands: [0, 2, 2, 4, 6, 2, 4, 8, 2]
-    number_of_reflections: 1
+#  - number_of_nodes: 5
+#    delivery_demands: [0, 10, 6, 4 ,10]
+#    number_of_reflections: 1
+#  - number_of_nodes: 7
+#    delivery_demands: [0, 6, 4, 4, 10, 2, 4]
+#    number_of_reflections: 1
+#  - number_of_nodes: 9
+#    delivery_demands: [0, 2, 2, 4, 6, 2, 4, 8, 2]
+#    number_of_reflections: 1
 
 # Configuration sweep of traveling salesman.
 traveling_salesman_configuration_sweep:
@@ -46,16 +46,15 @@ traveling_salesman_configuration_sweep:
 
 # Default parameters of VRP
 vehicle_routing_problem_parameters:
-  seed: 1
+  seeds: [1, 1, 1]
   size: 100
-  number_of_customers: 4
+  number_of_nodes: 5
   vehicles:
     a: 20
     b: 12
-  include_routing: false
   weight_factor: 0
   revenue_per_container: 100
-  objective: "max"
+  objective: "min"
 
 # Default parameters of TSP
 traveling_salesman_parameters:

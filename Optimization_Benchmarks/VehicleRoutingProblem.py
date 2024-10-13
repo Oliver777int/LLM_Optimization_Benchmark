@@ -36,7 +36,8 @@ class VRPInstance:
         dist_matrix = [[0.0] * self.NUMBER_OF_NODES for _ in range(self.NUMBER_OF_NODES)]
         for i in range(self.NUMBER_OF_NODES):
             for j in range(self.NUMBER_OF_NODES):
-                dist_matrix[i][j] = round(self.distance(self.graph[i], self.graph[j]))
+                dist_matrix[i][j] = round(self.distance(self.graph[i], self.graph[j]), 4)
+        return dist_matrix
     
     def get_coordinates(self):
         result_string = ""
@@ -53,9 +54,10 @@ class VRPInstance:
 class VRPSolutionCostMinimization(ProblemSolution):
     problem_instance: VRPInstance
     delivery_plan: Optional[Dict[str, Any]] = None
+    feasibility_violation: Optional[str] = None
 
     def __str__(self) -> str:
-        return f"delivery_plan: {self.delivery_plan}\nCost: {self.score}"
+        return f"Delivery plan:\n```json\n{self.delivery_plan}\n```\nCost: {self.score}"
     
     def evaluate(self, response: str) -> Union[float, None]:
         """
@@ -68,7 +70,7 @@ class VRPSolutionCostMinimization(ProblemSolution):
             return
 
         # If solution is valid compute its score.
-        if self.isValid(response):
+        if self.isValid():
             return self.compute_cost()
     
     def distance(self, node1, node2) -> float:
@@ -80,37 +82,31 @@ class VRPSolutionCostMinimization(ProblemSolution):
         total_cost = 0
         for vehicle in self.delivery_plan["vehicles"]:
             deliveries = vehicle["deliveries"]
-            current_load = sum(deliveries.values())
             current_node = 0
             for delivery_node, weight in deliveries.items():
                 delivery_node = int(re.sub(r'\D', '', delivery_node))
-                total_cost += self.distance(current_node, delivery_node) * (1 + current_load)
-                current_load -= weight
+                total_cost += self.distance(current_node, delivery_node)
                 current_node = delivery_node
-            total_cost += self.distance(current_node, 0) * (1 + current_load)
+            total_cost += self.distance(current_node, 0)
         return int(total_cost)
     
     def parse(self, response: str) -> Union[Dict[str, Any], None]:
-        response = response.lower()
-        # Find the contents of the json using markdown
-        response = response.replace("\\","")
-        start_marker = "```json"
-        end_marker = "```"
-        start_index = response.find(start_marker) + len(start_marker)
-        response = response[start_index:]
-        end_index = response.find(end_marker)
-        if start_index == -1 or end_index == -1:
-            return None
-        parenthesis_index = response.find('{')
-        response = response[parenthesis_index:end_index].strip() # Extracts the json without "delivery_plan = "
+        # Use regex to extract content within the ```json block
+        json_block_pattern = re.compile(r"```json\s*(.*?)\s*```", re.DOTALL)
+        match = json_block_pattern.search(response)
 
-        # Try to turn the parsed response into a json (delivery_plan)
+        if not match:
+            self.feasibility_violation = "JSON block not found"
+            return None
+
+        json_content = match.group(1).strip()
+
+        # Try to parse the JSON content
         try:
-            response = response.replace("'", '"')
-            response = json.loads(response)
-            return response
-        except json.JSONDecodeError:
-            self.feasibility_violation = "Incorrect response format"
+            parsed_response = json.loads(json_content.replace("'", '"').lower())
+            return parsed_response
+        except json.JSONDecodeError as e:
+            self.feasibility_violation = f"JSON decoding failed: {e}"
             return None
     
     def isValid(self) -> bool:
@@ -158,7 +154,7 @@ class VRPSolutionCostMinimization(ProblemSolution):
                 return False
             
             for delivery, amount in vehicle['deliveries'].items():
-                    delivery_node = int(delivery[-1])
+                    delivery_node = int(re.search(r'\d+$', delivery).group())
                     delivery_requirements[delivery_node] -= amount
 
         # Requires all deliveries to be fulfilled.
@@ -166,7 +162,7 @@ class VRPSolutionCostMinimization(ProblemSolution):
             self.feasibility_violation = "Not all deliveries are fulfilled"
             return False
 
-        if len(self.delivery_plan["vehicles"]) != len(self.VEHICLES):
+        if len(self.delivery_plan["vehicles"]) != len(self.problem_instance.VEHICLES):
             self.feasibility_violation = "Vehicles can only be used for a single route. The provided solution uses the same vehicle more than once."
             return False
         return True
@@ -178,12 +174,12 @@ class VRPSolutionRevenueMaximization(VRPSolutionCostMinimization):
     using: Revenue = number_of_deliveries * costant - total_cost_of_delivery. This solution class also accepts solutions which do not visit all customers, i.e,
     it is much less constrained compared to total cost minimization.
     """
-    tsp_problem_instance: VRPInstance
+    problem_instance: VRPInstance
     delivery_plan: Dict[str, Any] = None
-    total_containers_delivered: Optional[int] = None
+    total_containers_delivered: Optional[int] = 0
 
     def __str__(self) -> str:
-        return f"delivery_plan: {self.delivery_plan}\nRevenue: {self.score}"
+        return f"Delivery plan:\n```json\n{self.delivery_plan}\n```\nRevenue: {self.score}"
     
     def evaluate(self, response: str) -> Union[float, None]:
         """
@@ -196,7 +192,7 @@ class VRPSolutionRevenueMaximization(VRPSolutionCostMinimization):
             return
 
         # If solution is valid compute its score.
-        if self.isValid(response):
+        if self.isValid():
             return int(self.compute_revenue())
 
     def isValid(self) -> bool:
@@ -210,7 +206,8 @@ class VRPSolutionRevenueMaximization(VRPSolutionCostMinimization):
         return feasible
 
     def compute_revenue(self) -> float:
-        self.revenue = self.tsp_problem_instance.r * self.total_containers_delivered - self.compute_cost()
+        revenue = self.problem_instance.r * self.total_containers_delivered - self.compute_cost()
+        return int(revenue)
 
     def capacity_feasibility(self) -> bool:
         delivery_requirements = self.problem_instance.DELIVERY_REQUIREMENTS.copy()
@@ -221,14 +218,14 @@ class VRPSolutionRevenueMaximization(VRPSolutionCostMinimization):
                 return False
             
             for delivery, amount in vehicle['deliveries'].items():
-                    delivery_node = int(delivery[-1])
+                    delivery_node = int(re.search(r'\d+$', delivery).group())
 
                     if delivery_requirements[delivery_node] >= amount:
                         self.total_containers_delivered += amount
 
                     delivery_requirements[delivery_node] -= amount
         
-        if len(self.delivery_plan["vehicles"]) != len(self.VEHICLES):
+        if len(self.delivery_plan["vehicles"]) != len(self.problem_instance.VEHICLES):
             self.feasibility_violation = "Vehicles can only be used for a single route. The provided solution uses the same vehicle more than once."
             return False
         return True

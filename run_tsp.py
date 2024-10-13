@@ -8,7 +8,7 @@ from Optimization_Benchmarks.TravelingSalesmanProblem import TSPInstance, TSPSol
 from Prompts.traveling_salesman_prompt_template import TSP_META_PROMPT_COORDINATES, TSP_META_PROMPT_HISTORY
 from Optimizer import Optimize
 from Plotting.optimal_score_tsp import OptimalTSPScore
-from Plotting.generate_tsp_plot import generate_plot
+from Plotting.generate_plot import generate_tsp_plot
 RESULT_DIR = Path("results")
 RESULT_DIR.mkdir(exist_ok=True)
 CONFIG_PATH = Path("config.yaml")
@@ -135,4 +135,4 @@ if __name__ == "__main__":
         if VERBOSE:
             print(results)
         
-    generate_plot(RESULT_DIR)
+    generate_tsp_plot(RESULT_DIR)
